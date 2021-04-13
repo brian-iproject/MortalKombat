@@ -7,14 +7,10 @@ const player1 = {
     hp: 100,
     img: 'http://reactmarathon-api.herokuapp.com/assets/scorpion.gif',
     weapon: ['Палка', 'Ружьё'],
-    attack: function() {
-        const enemyHP = changeHP(player2);
-
-        addLog(`${this.name} нанёс удар ${player2.name} [${enemyHP} / 100]`);
-
-        if (enemyHP === 0)
-            playerWins(this.name);
-    }
+    attack: attack,
+    changeHP: changeHP,
+    elHP: elHP,
+    renderHP: renderHP
 };
 const player2 = {
     player: 2,
@@ -22,82 +18,101 @@ const player2 = {
     hp: 100,
     img: 'http://reactmarathon-api.herokuapp.com/assets/kitana.gif',
     weapon: ['автомат', 'рогатка'],
-    attack: function() {
-        const enemyHP = changeHP(player1);
-
-        addLog(`${this.name} нанёс удар ${player1.name} [${enemyHP} / 100]`);
-
-        if (enemyHP === 0)
-            playerWins(this.name);
-    }
+    attack: attack,
+    changeHP: changeHP,
+    elHP: elHP,
+    renderHP: renderHP
 };
 
-$randomButton.addEventListener('click', function (){
+$randomButton.addEventListener('click', function () {
     player1.attack();
     player2.attack();
+
+    const player1HP = player1.hp;
+    const player2HP = player2.hp;
+
+    if (player1HP === 0 && player2HP === 0) {
+        gameOver();
+    } else if (player1HP === 0) {
+        gameOver(player2.name);
+    } else if (player2HP === 0) {
+        gameOver(player1.name);
+    }
 });
 
 /**
- * Добавление строки в лог
- * @param logStr
+ * Нанесение удара
  */
-function addLog(logStr) {
-    const $chatContainer = document.querySelector('.chat__inner');
-    $chatContainer.insertAdjacentHTML('afterbegin', `<p>${logStr}</p>`)
+function attack() {
+    const enemy = this.player === 1 ? player2 : player1;
+
+    enemy.changeHP(getRandomCount(20));
+    enemy.renderHP();
+
+    addLog(`${this.name} нанёс удар ${enemy.name} [${enemy.hp} / 100]`);
 }
 
 /**
  * Завершение игры и вывод победителя
  * @param name
  */
-function playerWins(name) {
+function gameOver(name) {
     const $winsTitle = createElement('div', 'loseTitle');
-    $winsTitle.innerText = `${name} wins`;
+
+    if (name) {
+        $winsTitle.innerText = `${name} wins`;
+    } else {
+        $winsTitle.innerText = 'draw';
+    }
 
     $arenas.appendChild($winsTitle);
     $randomButton.disabled = 1;
-}
-
-/**
- * Получение рандомного числа
- * @param maxCount
- * @returns {number}
- */
-function getRandomCount(maxCount) {
-    return Math.ceil(Math.random() * maxCount);
+    createReloadButton();
 }
 
 /**
  * Изменение HP
- * @param playerObj
+ * @param hpCount
  * @returns {number}
  */
-function changeHP(playerObj) {
-    const $player = $arenas.querySelector(`.player${playerObj.player}`);
-    const playerLife = $player.querySelector('.life');
+function changeHP(hpCount) {
+    this.hp = this.hp >= hpCount ? this.hp - hpCount : 0;
 
-    const randomCount = getRandomCount(20);
-
-    playerObj.hp = playerObj.hp >= randomCount ? playerObj.hp - randomCount : 0;
-
-    playerLife.style.width = playerObj.hp+'%';
-
-    return playerObj.hp;
+    return this.hp;
 }
 
 /**
- * Создание элемента DOM
- * @param tag
- * @param tagClass
- * @returns {*}
+ * Получение элемента с жизнями
+ * @returns {Element}
  */
-function createElement(tag, tagClass) {
-    const $tag = document.createElement(tag);
+function elHP() {
+    return $arenas.querySelector(`.player${this.player} .life`);
+}
 
-    if (tagClass)
-        $tag.classList.add(tagClass);
+/**
+ * Отрисовка жизней
+ */
+function renderHP() {
+    const playerLife = this.elHP();
+    playerLife.style.width = this.hp+'%';
+}
 
-    return $tag;
+/**
+ * Создание кнопки перезапуска игры
+ */
+function createReloadButton() {
+    const $control = $arenas.querySelector('.control');
+    const $reloadWrap = createElement('div', 'reloadWrap');
+    const $reloadButton = createElement('button', 'button');
+
+    $reloadButton.innerText = 'Restart';
+
+    $reloadWrap.appendChild($reloadButton);
+    $control.appendChild($reloadWrap);
+
+    $reloadButton.addEventListener('click', function () {
+        window.location.reload();
+    });
 }
 
 /***
@@ -131,8 +146,39 @@ function createPlayer(playerObj) {
     return $player
 }
 
+/**
+ * Создание элемента DOM
+ * @param tag
+ * @param tagClass
+ * @returns {*}
+ */
+function createElement(tag, tagClass) {
+    const $tag = document.createElement(tag);
 
-$arenas.appendChild(createPlayer(player1));
-$arenas.appendChild(createPlayer(player2));
+    if (tagClass)
+        $tag.classList.add(tagClass);
+
+    return $tag;
+}
+
+/**
+ * Добавление строки в лог
+ * @param logStr
+ */
+function addLog(logStr) {
+    const $chatContainer = document.querySelector('.chat__inner');
+    $chatContainer.insertAdjacentHTML('afterbegin', `<p>${logStr}</p>`)
+}
+
+/**
+ * Получение рандомного числа
+ * @param maxCount
+ * @returns {number}
+ */
+function getRandomCount(maxCount) {
+    return Math.ceil(Math.random() * maxCount);
+}
+
+const players = $arenas.append(...[createPlayer(player1), createPlayer(player2)]);
 
 addLog('Fight!!!');
