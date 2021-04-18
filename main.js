@@ -1,4 +1,4 @@
-import {writeLog, clearLogs, fightLog} from "./logs.js";
+import {writeLog, clearLogs, generateLog} from "./logs.js";
 import {getRandomCount, createElement} from "./utils.js";
 
 const $arenas = document.querySelector('.arenas');
@@ -52,17 +52,18 @@ function getAttack(hit = ATTACK[getRandomCount(3) - 1], defence = ATTACK[getRand
 
 /**
  * Нанесение удара
+ * @param damage
  */
-function attack(value) {
+function attack(damage) {
     const enemy = getEnemy(this);
 
-    if (value) {
-        enemy.changeHP(value);
+    if (damage) {
+        enemy.changeHP(damage);
         enemy.renderHP();
 
-        fightLog(this.name, value, enemy.name, enemy.hp)
+        generateLog('hit', this, enemy, damage);
     } else {
-        writeLog(`${this.name} нанёс удар, но ${enemy.name} отразил его`);
+        generateLog('defence', this, enemy);
     }
 }
 
@@ -70,7 +71,7 @@ function attack(value) {
  * Принимает текущего игрока и
  * Возвращает соперника
  * @param player
- * @returns {{elHP: (function(): Element), weapon: string[], img: string, attack: attack, name: string, hp: number, changeHP: (function(*): number), player: number, renderHP: renderHP}|{elHP: (function(): Element), weapon: string[], img: string, attack: attack, name: string, hp: number, changeHP: (function(*): number), player: number, renderHP: renderHP}}
+ * @returns {{elHP: (function(): Element), weapon: string[], img: string, attack: attack, name: string, hp: number, changeHP: (function(*): number), player: number, renderHP: function()}|{elHP: (function(): Element), weapon: string[], img: string, attack: attack, name: string, hp: number, changeHP: (function(*): number), player: number, renderHP: renderHP}}
  */
 function getEnemy(player) {
     return player.player === 1 ? player2 : player1;
@@ -168,37 +169,31 @@ function removePlayers() {
 }
 
 /**
- * Определяет и возвращает победителя
- * @returns {string|undefined}
+ * Возвращает результаты боя
+ * @returns {{player1: (string), player2: (string)}}
  */
-function getWinner() {
-    let winner;
-
-    if (player1.hp === 0 && player2.hp === 0) {
-        winner = undefined;
-    } else if (player1.hp === 0) {
-        winner = player2.name;
-    } else if (player2.hp === 0) {
-        winner = player1.name;
-    }
-
-    return winner;
+function getResult() {
+    return {
+        player1: player1.hp === 0 ? 'lose' : 'winner',
+        player2: player2.hp === 0 ? 'lose' : 'winner'
+    };
 }
 
 /**
- * Объявление победителя
+ * Выводит результаты
  */
-function setWinner() {
+function showResult() {
     const $winsTitle = createElement('div', 'winnerTitle');
-    const winner = getWinner();
+    const result = getResult();
 
-    if  (winner === undefined) {
-        $winsTitle.innerText = `draw`;
-        writeLog('<span class="red">Бой закончился вничью!</span>');
-    } else {
-        $winsTitle.innerText = `${winner} wins`;
-        writeLog(`<span class="red">${winner} wins</span>`);
-    }
+    if (result.player1 === 'lose' && result.player2 === 'lose')
+        generateLog('draw');
+
+    if (result.player1 === 'winner')
+        generateLog('end', player1, player2);
+
+    if (result.player2 === 'winner')
+        generateLog('end', player2, player1);
 
     $arenas.appendChild($winsTitle);
 }
@@ -207,7 +202,7 @@ function setWinner() {
  * Завершение игры и вывод победителя
  */
 function gameOver() {
-    setWinner();
+    showResult();
 
     $randomButton.disabled = 1;
     createReloadButton();
@@ -266,7 +261,7 @@ function init() {
 
     $control.addEventListener('submit', combat);
 
-    writeLog('Fight!!!');
+    generateLog('start', player1, player2);
 }
 
 init();
