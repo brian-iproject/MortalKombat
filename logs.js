@@ -50,6 +50,7 @@ function generateLog(type, player1 = false, player2 = false, damage = 0) {
             break;
         default:
             baseLog = logs[type];
+            break;
     }
 
     const textLog = baseLog
