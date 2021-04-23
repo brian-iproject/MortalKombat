@@ -18,8 +18,16 @@ function createElement(tag, tagClass) {
  * @param maxCount
  * @returns {number}
  */
-function getRandomCount(maxCount) {
-    return Math.ceil(Math.random() * maxCount);
+const getRandomCount = (maxCount) => Math.ceil(Math.random() * maxCount);
+
+/**
+ * Возвращает время в
+ * отформатированном виде
+ * @returns {string}
+ */
+const getTimeFormatted = () => {
+    const date = new Date();
+    return date.getHours() + ':' + date.getMinutes();
 }
 
-export {getRandomCount, createElement}
+export {getRandomCount, createElement, getTimeFormatted}

@@ -1,13 +1,14 @@
-import {getRandomCount} from "./utils.js";
+import {getRandomCount, getTimeFormatted} from "./utils.js";
 
 const $chatContainer = document.querySelector('.chat__inner');
 
 /**
- * Записывает строку в лог
- * @param logStr
+ * Записывает сгенерированную
+ * строку в лог
+ * @param rest
  */
-function writeLog(logStr) {
-    $chatContainer.insertAdjacentHTML('afterbegin', `<p>${logStr}</p>`)
+function writeLog(...rest) {
+    $chatContainer.insertAdjacentHTML('afterbegin', `<p>${generateLog(...rest)}</p>`)
 }
 
 /**
@@ -15,16 +16,6 @@ function writeLog(logStr) {
  */
 function clearLogs() {
     $chatContainer.innerHTML = '';
-}
-
-/**
- * Возвращает время в
- * отформатированном виде
- * @returns {string}
- */
-function getTimeFormatted() {
-    const date = new Date();
-    return date.getHours() + ':' + date.getMinutes();
 }
 
 /**
@@ -36,37 +27,38 @@ function getTimeFormatted() {
  * @param damage
  */
 function generateLog(type, player1 = false, player2 = false, damage = 0) {
-    let baseLog = '';
+    const {name: player1Name} = player1;
+    const {name: player2Name} = player2;
+
+    let textLog = '';
+    let randomLog = '';
+
+    if (typeof logs[type] === 'object')
+        randomLog = logs[type][getRandomCount(logs[type].length - 1)];
 
     switch (type) {
         case 'hit':
-            baseLog = `[time] ${logs[type][getRandomCount(logs[type].length - 1)]} -[damage] [[hp]/100]`;
+            textLog = `[time] ${randomLog} -[damage] [[hp]/100]`;
             break;
         case 'defence':
-            baseLog = `[time] ${logs[type][getRandomCount(logs[type].length - 1)]}`;
-            break;
         case 'end':
-            baseLog = `[time] ${logs[type][getRandomCount(logs[type].length - 1)]}`;
+            textLog = `[time] ${randomLog}`;
             break;
         default:
-            baseLog = logs[type];
+            textLog = logs[type] ? logs[type] : 'error type log';
             break;
     }
 
-    const textLog = baseLog
-        .replace('[playerDefence]', `<span class="red">${player2.name}</span>`)
-        .replace('[playerKick]', `<span class="red">${player1.name}</span>`)
+    return textLog
+        .replace('[playerDefence]', `<span class="red">${player2Name}</span>`)
+        .replace('[playerKick]', `<span class="red">${player1Name}</span>`)
         .replace('[time]', getTimeFormatted())
-        .replace('[player1]', `<span class="red">${player1.name}</span>`)
-        .replace('[player2]', `<span class="red">${player2.name}</span>`)
-        .replace('[playerWins]', `<span class="red">${player1.name}</span>`)
-        .replace('[playerLose]', `<span class="red">${player2.name}</span>`)
+        .replace('[player1]', `<span class="red">${player1Name}</span>`)
+        .replace('[player2]', `<span class="red">${player2Name}</span>`)
+        .replace('[playerWins]', `<span class="red">${player1Name}</span>`)
+        .replace('[playerLose]', `<span class="red">${player2Name}</span>`)
         .replace('[damage]', `<span class="red">${damage}</span>`)
-        .replace('[hp]', `<span class="red">${player2.hp}</span>`)
-        .replace('[playerWins]', `<span class="red">${player1.name}</span>`)
-        .replace('[playerLose]', `<span class="red">${player2.name}</span>`);
-
-    writeLog(textLog);
+        .replace('[hp]', `<span class="red">${player2Name}</span>`);
 }
 
 /**
