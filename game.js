@@ -1,132 +1,175 @@
-import {$arenas, $control, $randomButton} from "./globals.js"
 import {createElement, getRandomCount} from "./utils.js";
 import {clearLogs, writeLog} from "./logs.js";
-import {removePlayers, getAttack, player1, player2, createPlayer} from "./player.js";
+import {Player} from "./player.js";
 
-/**
- * Выбор случайной арены
- */
-function setRandomArenas() {
-    $arenas.classList.add('arena'+getRandomCount(5));
-}
-
-/**
- * Создание кнопки перезапуска игры
- */
-function createReloadButton() {
-    const $reloadWrap = createElement('div', 'reloadWrap');
-    const $reloadButton = createElement('button', 'button');
-
-    $reloadButton.type = 'reset';
-    $reloadButton.innerText = 'Restart';
-
-    $reloadWrap.appendChild($reloadButton);
-    $arenas.appendChild($reloadWrap);
-
-    $reloadButton.addEventListener('click', gameReset);
-}
-
-/**
- * Возвращает результаты боя
- * @returns {{player1: (string), player2: (string)}}
- */
-function getResult() {
-    return {
-        player1: player1.hp === 0 ? 'lose' : 'winner',
-        player2: player2.hp === 0 ? 'lose' : 'winner',
-
-    };
-}
-
-/**
- * Выводит результаты
- */
-function showResult() {
-    const $winsTitle = createElement('div', 'winnerTitle');
-    const result = getResult();
-
-    if (result.player1 === 'lose' && result.player2 === 'lose') {
-        writeLog('draw');
-        $winsTitle.innerText = `draw`;
+class Game {
+    constructor(props) {
+        this.$arenas = document.querySelector('.arenas');
+        this.$control = document.querySelector('.control');
+        this.fightButton = document.querySelector('.button[type=submit]')
+        this.player1 = {};
+        this.player2 = {};
     }
 
-    if (result.player1 === 'winner') {
-        writeLog('end', player1, player2);
-        $winsTitle.innerText = `${player1.name} wins`;
+    /**
+     * Создаеёт игроков
+     */
+    getPlayers = () => {
+        this.player1 = new Player(1,{
+            name: 'Scorpion',
+            hp: 100,
+            img: 'http://reactmarathon-api.herokuapp.com/assets/scorpion.gif',
+            weapon: ['Палка', 'Ружьё'],
+        });
+        this.player2 = new Player(2,{
+            name: 'Kitana',
+            hp: 100,
+            img: 'http://reactmarathon-api.herokuapp.com/assets/kitana.gif',
+            weapon: ['автомат', 'рогатка'],
+        });
     }
 
-    if (result.player2 === 'winner') {
-        writeLog('end', player2, player1);
-        $winsTitle.innerText = `${player2.name} wins`;
+    /**
+     * Выбор случайной арены
+     */
+    setRandomArenas = () => {
+        this.$arenas.classList.add('arena'+getRandomCount(5));
     }
 
-    $arenas.appendChild($winsTitle);
-}
+    /**
+     * Создание кнопки перезапуска игры
+     */
+    createReloadButton = () => {
+        const $reloadWrap = createElement('div', 'reloadWrap');
+        const $reloadButton = createElement('button', 'button');
 
-/**
- * Завершение игры и вывод победителя
- */
-function gameOver() {
-    showResult();
+        $reloadButton.type = 'reset';
+        $reloadButton.innerText = 'Restart';
 
-    $randomButton.disabled = 1;
-    createReloadButton();
-}
+        $reloadWrap.appendChild($reloadButton);
+        this.$arenas.appendChild($reloadWrap);
 
-/**
- * Перезапуск игры
- */
-function gameReset() {
-    removePlayers();
-    clearLogs();
+        $reloadButton.addEventListener('click', this.reset);
+    }
 
-    player1.hp = 100;
-    player2.hp = 100;
+    /**
+     * Возвращает результаты боя
+     * @returns {{player1: (string), player2: (string)}}
+     */
+    getResult = () => {
+        this.player1.winners = this.player1.hp !== 0 && true;
+        this.player2.winners = this.player2.hp !== 0 && true;
 
-    $arenas.querySelector('.reloadWrap').remove();
-    $arenas.querySelector('.winnerTitle').remove();
+        return {
+            player1: this.player1.hp !== 0 && true,
+            player2: this.player2.hp !== 0 && true
+        };
+    }
 
-    $randomButton.disabled = 0;
+    /**
+     * Выводит результаты
+     */
+    showResult = () => {
+        const $winsTitle = createElement('div', 'winnerTitle');
+        const result = this.getResult();
 
-    gameInit();
-}
-
-/**
- * Ведение боя
- * @param event
- */
-function combat(event) {
-    event.preventDefault();
-
-    const attack = {};
-    for (let item of this) {
-        if (item.checked) {
-            attack[item.name] = item.value;
+        if (!result.player1 && !result.player2) {
+            writeLog('draw');
+            $winsTitle.innerText = `draw`;
         }
-        item.checked = false;
+
+        if (result.player1) {
+            writeLog('end', this.player1, this.player2);
+            $winsTitle.innerText = `${this.player1.name} wins`;
+        }
+
+        if (result.player2) {
+            writeLog('end', this.player2, this.player1);
+            $winsTitle.innerText = `${this.player2.name} wins`;
+        }
+
+        this.$arenas.appendChild($winsTitle);
     }
 
-    const player1Attack = getAttack(attack.hit, attack.defence);
-    const player2Attack = getAttack();
+    /**
+     * Завершение игры и вывод победителя
+     */
+    end = () => {
+        this.showResult();
 
-    player1.attack(player1Attack.hit !== player2Attack.defence && player1Attack.value);
-    player2.attack(player1Attack.defence !== player2Attack.hit && player2Attack.value);
+        this.fightButton.disabled = 1;
+        this.createReloadButton();
+    }
 
-    if (player1.hp === 0 || player2.hp === 0) {
-        gameOver();
+    /**
+     * Перезапуск игры
+     */
+    reset = () => {
+        clearLogs();
+
+        this.player1.hp = 100;
+        this.player2.hp = 100;
+
+        this.player1.remove();
+        this.player2.remove();
+
+        this.$arenas.querySelector('.reloadWrap').remove();
+        this.$arenas.querySelector('.winnerTitle').remove();
+
+        this.fightButton.disabled = 0;
+
+        this.init();
+    }
+
+    /**
+     * Инициализация игры
+     */
+    init = () => {
+        this.getPlayers();
+
+        this.$arenas.append(...[this.player1.lauoyt, this.player2.lauoyt]);
+        this.setRandomArenas();
+
+        this.$control.addEventListener('submit', this.fight);
+
+        writeLog('start', this.player1, this.player2);
+    }
+
+    /**
+     * Возвращает параметры атаки из формы
+     * @param form
+     * @returns {{Object}}
+     */
+    playerAttack = (form) => {
+        const attack = {};
+        for (let item of form) {
+            if (item.checked) {
+                attack[item.name] = item.value;
+            }
+            item.checked = false;
+        }
+
+        return attack;
+    }
+
+    /**
+     * Ведение боя
+     * @param attack
+     */
+    fight = (event) => {
+        event.preventDefault();
+
+        const {hit, defence} = this.playerAttack(event.target);
+
+        const player1Attack = this.player1.generateAttack(hit, defence);
+        const player2Attack = this.player2.generateAttack();
+
+        this.player1.attack(player1Attack.hit !== player2Attack.defence && player1Attack.value, this.player2);
+        this.player2.attack(player1Attack.defence !== player2Attack.hit && player2Attack.value, this.player1);
+
+        if (!this.player1.hp || !this.player2.hp)
+            this.end();
     }
 }
 
-/**
- * Инициализация игры
- */
-function gameInit() {
-    $arenas.append(...[createPlayer(player1), createPlayer(player2)]);
-    setRandomArenas();
-
-    $control.addEventListener('submit', combat);
-
-    writeLog('start', player1, player2);
-}
-
-export {gameInit};
+export default Game;
